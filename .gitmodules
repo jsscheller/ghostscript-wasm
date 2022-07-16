@@ -1,0 +1,6 @@
+[submodule "lib/ghostscript"]
+	path = lib/ghostscript
+	url = git://git.ghostscript.com/ghostpdl.git
+[submodule "lib/zlib"]
+	path = lib/zlib
+	url = https://github.com/madler/zlib.git
