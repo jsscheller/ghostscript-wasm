@@ -9,7 +9,7 @@ fn_git_clean() {
 OUT_DIR="$PWD/out"
 ROOT="$PWD"
 EMCC_FLAGS_DEBUG="-Os -g3"
-EMCC_FLAGS_RELEASE="-Os -flto"
+EMCC_FLAGS_RELEASE="-Oz -flto"
 
 export CPPFLAGS="-I$OUT_DIR/include"
 export LDFLAGS="-L$OUT_DIR/lib"
@@ -27,18 +27,17 @@ emmake make -j install
 
 cd "$ROOT/lib/ghostscript"
 fn_git_clean
-./autogen.sh
-emconfigure ./configure \
-  CCAUX=gcc \
+emconfigure ./autogen.sh \
+  CCAUX=gcc CFLAGSAUX= CPPFLAGSAUX= \
+  --host="wasm32-unknown-linux" \
   --prefix="$OUT_DIR" \
   --disable-threading \
   --disable-cups \
   --disable-dbus \
   --disable-gtk \
   --with-arch_h="$ROOT/arch_wasm.h"
-
 # TODO: remove `EMULATE_FUNCTION_POINTER_CASTS`: https://github.com/emscripten-core/emscripten/issues/16126
-GS_LDFLAGS="\
+export GS_LDFLAGS="\
 -lnodefs.js -lworkerfs.js \
 --pre-js "$ROOT/js/pre.js" \
 --post-js "$ROOT/js/post.js" \
@@ -49,7 +48,7 @@ GS_LDFLAGS="\
 -s INITIAL_MEMORY=67108864 \
 -s ALLOW_MEMORY_GROWTH=1 \
 -s EXPORTED_RUNTIME_METHODS='[\"callMain\",\"FS\",\"NODEFS\",\"WORKERFS\",\"ENV\"]' \
--s INCOMING_MODULE_JS_API='[\"noInitialRun\",\"noFSInit\",\"locateFile\",\"preRun\"]' \
+-s INCOMING_MODULE_JS_API='[\"noInitialRun\",\"noFSInit\",\"locateFile\",\"preRun\",\"instantiateWasm\"]' \
 -s NO_DISABLE_EXCEPTION_CATCHING=1 \
 -s MODULARIZE=1 \
 "
@@ -63,3 +62,8 @@ cd "$ROOT/dist"
 cp $ROOT/lib/ghostscript/bin/gs.* .
 wasm-opt gs.wasm -Oz -o gs.opt.wasm
 mv gs.opt.wasm gs.wasm
+
+# The closure flag doesn't work for some reason, so we need to remove the
+# INCOMING_MODULE_JS_API-checks manually.
+echo "reminder: remove INCOMING_MODULE_JS_API-checks"
+exit 1
